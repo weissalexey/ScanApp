@@ -1,3 +1,8 @@
+<p align="center">
+  <img src="https://github.com/weissalexey/ScanApp/blob/main/ScanApp.png" alt="ScanApp" />
+</p>
+
+
 ScanApp von LisIn – Wie zwei Templates die Welt verändern
 Manchmal hilft nur eins: selbst Hand anlegen.
 
