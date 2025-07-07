@@ -24,5 +24,4 @@ Damit lassen sich alle gewünschten Daten ganz flexibel anzeigen – direkt beim
 Falls dir das bekannt vorkommt –
 melde dich gern bei mir 😄
 
-📬 Kontakt: [dein Name / GitHub-Handle / E-Mail]
 Gemeinsam bringen wir ein bisschen Magie in ScanApp!
