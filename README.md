@@ -19,7 +19,7 @@ Ein bisschen Dateistruktur, ein paar Nächte – und voilà:
 
 🔧 Geändert werden müssen:
 ScanSSCCInboundListTemplate.cshtml
-
+MasterStopsListTemplate.cshtml
 ScanSSCCListTemplate1.cshtml
 
 Web.config (für die Verbindungsparameter)
