@@ -1,0 +1,142 @@
+﻿@using System.Data.SqlClient
+@using LIS.NetSped.Core.IEntities.Scanning.Transshipment.LoadingOrder
+@model LIS.NetSped.Scanning.ScanApp.Client.Models.Stops.LISLoadingOrderStopAdapter[]
+
+@{
+  var imgMapping = new Dictionary<long, string>();
+  var connString = System.Configuration.ConfigurationManager.ConnectionStrings["WinSpedDb"].ConnectionString;
+
+  using (var conn = new SqlConnection(connString))
+  {
+    conn.Open();
+
+    foreach (var item in Model)
+    {
+      var stopId = item.StopId;
+      long? shipmentId = null;
+
+      var idCmd = conn.CreateCommand();
+      idCmd.CommandText = "SELECT ShipmentId FROM XXAV_LoadingStops WHERE TSSStopId = @stopid";
+      idCmd.Parameters.AddWithValue("@stopid", stopId);
+      var result = idCmd.ExecuteScalar();
+      if (result != null && result != DBNull.Value)
+      {
+        shipmentId = Convert.ToInt64(result);
+      }
+
+      if (shipmentId.HasValue)
+      {
+        var cmd = conn.CreateCommand();
+        cmd.CommandText = @"
+          SELECT InfoSymbol12
+          FROM XXAV_CDC_Shipment
+          WHERE aufintnr = @id AND ScanStatus != 300";
+        cmd.Parameters.AddWithValue("@id", shipmentId.Value);
+
+        using (var reader = cmd.ExecuteReader())
+        {
+          if (reader.Read())
+          {
+            var symbol = reader["InfoSymbol12"].ToString();
+            string img = "";
+
+            if (symbol == "1202")
+            {
+              img = "/App_Themes/Carstensen/images/GCC.png";
+            }
+            else if (symbol == "1200")
+            {
+              img = "/App_Themes/Carstensen/images/delete.png";
+            }
+
+            imgMapping[stopId] = img;
+          }
+        }
+      }
+    }
+  }
+
+  int divId = 0;
+}
+
+@if (Model != null && !Model.IsEmpty())
+{
+  foreach (var item in Model)
+  {
+    <div class="lis-listView-Normal" id="@string.Format("LISListViewItem_{0}", divId++)" loadingorderid="@item.LoadingOrderId" stopid="@item.StopId" borderoid="@item.BorderoId" stopnote="@item.Note">
+      <table cellpadding="0" cellspacing="0">
+        <colgroup>
+          <col />
+          <col />
+          <col />
+          <col />
+          <col />
+          <col />
+          <col />
+        </colgroup>
+
+        <tr>
+          <td colspan="7">
+            <b>@item.OrderInputType</b> (@item.OrderCount Auftr.)
+          </td>
+        </tr>
+
+        <tr>
+          @if (item.IsOrderInputTypeBordero)
+          {
+            <td>@Resources.Resources.HeaderDestForwarder:&nbsp;</td>
+            <td colspan="6">@item.UnloadingStationName</td>
+          }
+          else
+          {
+            <td>@Resources.Resources.HeaderReciver:&nbsp;</td>
+            <td colspan="6" style="white-space: nowrap;">@item.UnloadingStationName</td>
+          }
+        </tr>
+
+        <tr>
+          <td>
+            @if (item.IsDangerousGoods)
+            {
+              <img class="ListIcon" src="@Url.ThemeContent("images/dangerousgoods.png")" />
+            }
+          </td>
+          <td colspan="6">@item.UnloadingStationContryCode-@item.UnloadingStationZip @item.UnloadingStationCity</td>
+        </tr>
+
+        <tr>
+  <td rowspan="2" align="center">
+    @if (imgMapping.ContainsKey(item.StopId))
+    {
+      <img class="ListIcon" style="max-width: 1.5rem;" src="@imgMapping[item.StopId]" />
+    }
+    else if (!string.IsNullOrEmpty(item.ImgSrcProgress))
+    {
+      <img class="ListIcon" style="max-width: 1.5rem;" src="@item.ImgSrcProgress" />
+    }
+  </td>
+  <td>@string.Format("{0} {1}", item.PackingUnitsCount, Resources.Resources.Package)</td>
+  <td></td>
+  <td>@string.Format("{0} {1}", item.LoadingMeter, Resources.Resources.LoadingMeter)</td>
+  <td></td>
+  <td>@string.Format("{0} {1}", item.PallettSpacesCount, Resources.Resources.StoragePlace)</td>
+</tr>
+
+        @if (ViewBag.ShowAllButton == null || !ViewBag.ShowAllButton)
+        {
+          <tr>
+            <td colspan="6">
+              <b>
+                @item.SSCCScaned @Resources.Resources.FromLabel @item.SSCCCount
+                @if (LIS.NetSped.Scanning.ScanApp.Client.Utils.LISScanningSession.LoadingOrder.Type != eLISLoadingOrderType.OutboundShuttle)
+                {
+                  @(item.ProductionFinish ? "" : "+")
+                }
+              </b>
+            </td>
+          </tr>
+        }
+      </table>
+    </div>
+  }
+}

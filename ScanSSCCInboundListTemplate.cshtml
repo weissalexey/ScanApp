@@ -1,0 +1,131 @@
+﻿@using System.Data.SqlClient
+@using LIS.NetSped.Scanning.ScanApp.Client.Models.ScaningSSCC;
+@using LIS.NetSped.Scanning.ScanApp.Client.Models.ScaningSSCCInbound;
+
+@model LISScanShipmentsInStopModel<LISShipmentToLoadingOrderQInboundAdapter>
+
+@{
+  var imgMapping = new Dictionary<long, string>();
+  var connString = System.Configuration.ConfigurationManager.ConnectionStrings["WinSpedDb"].ConnectionString;
+  using (var conn = new SqlConnection(connString))
+  {
+    conn.Open();
+    foreach (var item in Model.Shipments)
+    {
+      var shipmentId = item.ShipmentId;
+      var cmd = conn.CreateCommand();
+      cmd.CommandText = "SELECT InfoSymbol12 FROM XXAV_CDC_Shipment WHERE aufintnr = " + shipmentId + " AND ScanStatus != 300";
+      using (var reader = cmd.ExecuteReader())
+      {
+        if (reader.Read())
+        {
+          var symbol = reader["InfoSymbol12"].ToString();
+          string img = "";
+          if (symbol == "1202")
+          {
+            img = "/App_Themes/Carstensen/images/GCC.png";
+          }
+          else if (symbol == "1200")
+          {
+            img = "/App_Themes/Carstensen/images/delete.png";
+          }
+          imgMapping[item.ShipmentId.Value] = img;
+        }
+      }
+    }
+  }
+
+  int divId = 0;
+}
+
+@if (Model.Shipments != null)
+{
+  foreach (var item in Model.Shipments)
+  {
+    <text>
+      <div class="lis-listView-Normal" id="@string.Format("LISListViewItem_{0}", divId++)" loadingorderid="@item.LoadingOrderId" orderno="@item.OrderNo" shipmentid="@item.ShipmentId">
+        <table cellpadding="0" cellspacing="0">
+          <colgroup>
+            <col />
+            <col />
+            <col />
+            <col />
+          </colgroup>
+
+          <tr>
+            <td>@Resources.Resources.OrderNrShort&nbsp;</td>
+            <td>
+              @if (item.OrderNo > 0)
+              {
+                @item.OrderNo
+              }
+              &nbsp;
+            </td>
+            <td style="text-align:right;">
+              @if (!item.NextShipmentRelation.IsNullOrEmpty())
+              {
+                <text>@Resources.Resources.Rel:&nbsp;</text>
+              }
+              else
+              {
+                <text>@Resources.Resources.ReceivingRelation:&nbsp;</text>
+              }
+            </td>
+            <td>
+              <b>
+                @if (!item.NextShipmentRelation.IsNullOrEmpty())
+                {
+                  @item.NextShipmentRelation
+                }
+                else
+                {
+                  @item.ResiverRelation
+                }
+              </b>
+            </td>
+          </tr>
+
+          <tr>
+            <td>
+              @if (item.IsDangerousGoods)
+              {
+                <img class="ListIcon" src="@Url.ThemeContent("images/dangerousgoods.png")">
+                
+              }
+            </td>
+            <td colspan="3">
+              @if (item.ShipmentId > 0)
+              {
+                <b>@Model.GetSumWeight(item.ShipmentId.ToInt32Value()).ToStringValue("0") kg - @Model.GetSumPackageText(item.ShipmentId.ToInt32Value())</b>
+              }
+            </td>
+          </tr>
+
+          <tr>
+            <td rowspan="2" align="center">
+              @if (imgMapping.ContainsKey(item.ShipmentId.Value))
+              {
+                <img class="ListIcon" src="@imgMapping[item.ShipmentId.Value]" />
+              }
+              else
+              {
+                <img class="ListIcon" src="@item.ImgSrcProgress" />
+              }
+            </td>
+            <td style="text-align:right;">@Resources.Resources.HeaderReciver:&nbsp;&nbsp;</td>
+            <td colspan="2">@item.ResiverName</td>
+          </tr>
+
+          @if (!Model.ShowButton_LoadDetails)
+          {
+            <tr>
+              <td></td>
+              <td><b>@item.SSCCActual @Resources.Resources.FromLabel @item.SSCCDesired</b></td>
+            </tr>
+          }
+
+        </table>
+      </div>
+    </text>
+  }
+}

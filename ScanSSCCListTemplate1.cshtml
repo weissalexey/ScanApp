@@ -1,0 +1,110 @@
+﻿@using System.Data.SqlClient
+@using LIS.NetSped.Scanning.ScanApp.Client.Models.ScaningSSCC;
+
+@model LIS.NetSped.Scanning.ScanApp.Client.Models.ScaningSSCC.LISScanShipmentsInStopModel<LISShipmentToLoadingOrderQAdapter>
+
+@{
+  int divId = 0;
+  var imgMapping = new Dictionary<long, string>();
+  var connString = System.Configuration.ConfigurationManager.ConnectionStrings["WinSpedDb"].ConnectionString;
+  using (var conn = new SqlConnection(connString))
+  {
+    conn.Open();
+    foreach (var s in Model.Shipments)
+    {
+      var shipmentId = s.ShipmentId;
+      var cmd = conn.CreateCommand();
+      cmd.CommandText = "SELECT InfoSymbol12 FROM XXAV_CDC_Shipment WHERE aufintnr = " + shipmentId + " AND ScanStatus != 300";
+      using (var reader = cmd.ExecuteReader())
+      {
+        if (reader.Read())
+        {
+          var symbol = reader["InfoSymbol12"].ToString();
+          string img = "";
+          if (symbol == "1202")
+          {
+            img = "/App_Themes/Carstensen/images/GCC.png";
+          }
+          else if (symbol == "1200")
+          {
+            img = "/App_Themes/Carstensen/images/delete.png";
+          }
+          imgMapping[s.ShipmentId.Value] = img;
+        }
+      }
+    }
+  }
+}
+
+@if (Model.Shipments != null)
+{
+  foreach (var item in Model.Shipments)
+  {
+    <text>
+      <div class="lis-listView-Normal" id="@String.Format("LISListViewItem_{0}", divId++)" loadingorderid="@item.LoadingOrderId" shipmentid="@item.ShipmentId" borderoid="@item.BorderoId" stopid="@item.StopId">
+        <div style="display: grid; grid-template-columns: auto 1fr auto; grid-gap: .2rem ">
+        
+          <!-- Row 1 -->
+          <div style="grid-column: 1 / 3;">
+            <span>@Resources.Resources.Order&nbsp;<b>@item.OrderNo</b></span>
+            
+            @if (item.IsDangerousGoods)
+            {
+              <img class="ListIcon" src="@Url.ThemeContent("images/dangerousgoods.png")" style="margin: 0 .2rem 0 0; float:right;">
+            }
+          </div>
+
+          <div style="grid-column: 3" class="text-center">
+            <span>
+              @Resources.Resources.Relation
+              @if (!Model.LoadingOrderInfoAdapter.IsInbound)
+              {
+                <b>@item.Relation</b>
+              }
+            </span>
+          </div>
+            
+          <!-- Row 2 -->
+          <div style="grid-column: 1" class="lis-font-smaller">
+            <span>@Resources.Resources.SenderShort:</span>
+            
+          </div>
+          <div style="grid-column: 2" class="lis-font-smaller lis-col-oneline">
+            <span>@item.OriginalSenderName</span>
+          </div>
+          <div style="grid-column: 3;" class="text-center">
+            <span><b>@Model.GetSumWeight(item.ShipmentId.ToInt32Value()).ToStringValue("F0") kg - @Model.GetSumPackageText(item.ShipmentId.ToInt32Value())</b> @Resources.Resources.Package</span>
+          </div>
+
+          <!-- Row 3 -->
+          <div style="grid-column: 1" class="lis-font-smaller">
+            <span>@Resources.Resources.ReceiverShort:</span>
+          </div>
+          <div style="grid-column: 2" class="lis-font-smaller lis-col-oneline">
+            <span>@item.ResiverName</span>
+          </div>
+          <div style="grid-column: 3; grid-row: span 2; margin-top: auto;" class="text-center">
+            @if (imgMapping.ContainsKey(item.ShipmentId.Value))
+            {
+              <img class="ListIcon" src="@imgMapping[item.ShipmentId.Value]" />
+            }
+            else if (!item.ImgSrcProgress.Contains("Blank"))
+            {
+              <img class="ListIcon" src="@item.ImgSrcProgress">
+            }
+            <div>
+              <span>@Resources.Resources.SSCC <b>@item.SSCCActual @Resources.Resources.FromLabel @item.SSCCDesired@(item.ProductionFinish ? "" : "+")</b></span>
+            </div>
+          </div>
+
+          <!-- Row 4 -->
+          <div style="grid-column: 2" class="lis-font-smaller lis-col-oneline">
+            <span>@item.ResiverCity</span>
+          </div>
+
+
+        </div>
+      </div>
+    </text>;
+  }
+}
