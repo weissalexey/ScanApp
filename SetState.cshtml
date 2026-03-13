@@ -1,0 +1,146 @@
+﻿@model LIS.NetSped.Scanning.ScanApp.Client.Models.ScaningSSCCSharedActions.SSCCStatusModel
+
+<script src="@Url.Content("~/Scripts/LISListview.min.js")"></script>
+
+<script type="text/javascript">
+
+  $(document).ready(function () {
+    LIS.DisableScannerOnStartup();
+  });
+
+  $(document).keyup(function (e) {  //Key keyboard handler
+
+    switch (e.keyCode) {
+      case 112://F1
+        SubmitForm();
+        break;
+      case 27: //Esc logout
+        BackButtonFunction();
+        break;
+    }
+  });
+
+  function onDataBound(arg) {
+    SelectFirstInList("listView");
+  }
+
+  function SubmitForm() {
+    var selected = $(".lis-listView-Selected");
+    if (selected.length == 1) {
+      var txtStatusTextId = document.getElementById('StatusTextId');
+      if (txtStatusTextId) {
+        txtStatusTextId.value = selected.attr('value');
+        $("#formSetState").submit();
+      }
+    }
+  }
+
+</script>
+
+
+@section MenuBar
+{
+  @ViewData.ModelState.NotificationSummary()
+  @Html.LISMenu()
+  <b>
+    @if (@Model.LoadingOrderInfoAdapter != null)
+    {
+      @Model.LoadingOrderInfoAdapter.TypeTextDetails
+    }
+    else
+    {
+      @Resources.Resources.Title
+    }
+  </b>
+  <br />
+  @Resources.Resources.SetState
+}
+
+<form method="post" id="formSetState">
+  @Html.HiddenFor(m => m.SSCC)
+  @Html.HiddenFor(m => m.Place)
+  @Html.HiddenFor(m => m.LoadingOrderId)
+  @Html.HiddenFor(m => m.StopId)
+  @Html.HiddenFor(m => m.StatusTextId)
+
+  <div class="ControlArea">
+    <table class="TableForm">
+      <colgroup>
+        <col />
+      </colgroup>
+      <tr>
+        <td>@Html.TextBoxFor(m => m.SSCC, Resources.Resources.SSCC, new { @class = "form-control", style = "width: 100%", disabled = "disabled" })</td>
+      </tr>
+      <tr>
+        <td><b>@Model.ActualSSCCStateText</b></td>
+        <td></td>
+      </tr>
+    </table>
+  </div>
+
+  <div class="InfoArea">
+
+    @Html.LISHtmlTemplate("SetStateListTemplate", Model.SSCCStates)
+  </div>
+</form>
+
+@section HotKeysArea
+{
+  @Html.LISBackButton("btn btn-primary HotkeyButton2")
+  @Html.LISButton("OK", "F1", "SubmitForm", "btn btn-primary HotkeyButton2", "RightButton")
+}
+
+
+<script>
+(function () {
+    // STRICT whitelist – ONLY these codes open the camera
+    var PHOTO_CODES = {
+        "I01": 1, "I02": 1, "I03": 1,
+        "I04": 1, "I06": 1, "I96": 1, "K01": 1
+    };
+
+    function getSSCC() {
+        var input = document.querySelector("input[type='text']");
+        return input && input.value ? input.value.trim() : "";
+    }
+
+    function findStatusCodeFromElement(el) {
+        while (el && el !== document.body) {
+            if (el.innerText) {
+                var m = el.innerText.match(/\(([A-Z]\d{2})\)/);
+                if (m) return m[1];
+            }
+            el = el.parentElement;
+        }
+        return null;
+    }
+
+    function openParcelCam(sscc, code) {
+        if (!sscc || !code) return;
+        if (!PHOTO_CODES[code]) return;
+
+        var url =
+            "parcelcam://capture?baseName=" +
+            encodeURIComponent(sscc + "_" + code);
+
+        var a = document.createElement("a");
+        a.href = url;
+        a.style.display = "none";
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+    }
+
+    document.addEventListener("click", function (e) {
+        var code = findStatusCodeFromElement(e.target);
+        if (!code) return;
+
+        var sscc = getSSCC();
+        if (!sscc) return;
+
+        setTimeout(function () {
+            openParcelCam(sscc, code);
+        }, 50);
+    }, true);
+})();
+</script>

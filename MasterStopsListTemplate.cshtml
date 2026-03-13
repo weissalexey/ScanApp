@@ -1,9 +1,9 @@
-﻿@using System.Data.SqlClient
+@using System.Data.SqlClient
 @using LIS.NetSped.Core.IEntities.Scanning.Transshipment.LoadingOrder
 @model LIS.NetSped.Scanning.ScanApp.Client.Models.Stops.LISLoadingOrderStopAdapter[]
 
 @{
-  var imgMapping = new Dictionary<long, string>();
+  var imgMapping = new Dictionary<long, List<string>>();
   var connString = System.Configuration.ConfigurationManager.ConnectionStrings["WinSpedDb"].ConnectionString;
 
   using (var conn = new SqlConnection(connString))
@@ -26,31 +26,65 @@
 
       if (shipmentId.HasValue)
       {
-        var cmd = conn.CreateCommand();
-        cmd.CommandText = @"
+        var imgs = new List<string>();
+
+        // Запрос 1: InfoSymbol12
+        var cmd12 = conn.CreateCommand();
+        cmd12.CommandText = @"
           SELECT InfoSymbol12
           FROM XXAV_CDC_Shipment
           WHERE aufintnr = @id AND ScanStatus != 300";
-        cmd.Parameters.AddWithValue("@id", shipmentId.Value);
-
-        using (var reader = cmd.ExecuteReader())
+        cmd12.Parameters.AddWithValue("@id", shipmentId.Value);
+        using (var reader = cmd12.ExecuteReader())
         {
           if (reader.Read())
           {
             var symbol = reader["InfoSymbol12"].ToString();
-            string img = "";
-
             if (symbol == "1202")
             {
-              img = "/App_Themes/Carstensen/images/GCC.png";
+              imgs.Add("/App_Themes/Carstensen/images/GCC.png");
             }
             else if (symbol == "1200")
             {
-              img = "/App_Themes/Carstensen/images/delete.png";
+              imgs.Add("/App_Themes/Carstensen/images/delete.png");
             }
-
-            imgMapping[stopId] = img;
           }
+        }
+
+        // Запрос 2: InfoSymbol16
+        var cmd16 = conn.CreateCommand();
+        cmd16.CommandText = @"
+          SELECT TOP 1 InfoSymbol16
+          FROM XXAV_CDC_Shipment
+          WHERE aufintnr = @id AND InfoSymbol16 IS NOT NULL";
+        cmd16.Parameters.AddWithValue("@id", shipmentId.Value);
+        using (var reader = cmd16.ExecuteReader())
+        {
+          if (reader.Read())
+          {
+            var symbol16 = reader["InfoSymbol16"].ToString();
+            if (symbol16 == "37")
+            {
+              imgs.Add("/App_Themes/Carstensen/images/HUBP.png");
+            }
+            else if (symbol16 == "15" || symbol16 == "17" || symbol16 == "18")
+            {
+              imgs.Add("/App_Themes/Carstensen/images/overnight.png");
+            }
+            else if (symbol16 == "36")
+            {
+              imgs.Add("/App_Themes/Carstensen/images/PRIO.png");
+            }
+            else
+            {
+              imgs.Add("/App_Themes/Carstensen/images/FIX.png");
+            }
+          }
+        }
+
+        if (imgs.Count > 0)
+        {
+          imgMapping[stopId] = imgs;
         }
       }
     }
@@ -105,22 +139,25 @@
         </tr>
 
         <tr>
-  <td rowspan="2" align="center">
-    @if (imgMapping.ContainsKey(item.StopId))
-    {
-      <img class="ListIcon" style="max-width: 1.5rem;" src="@imgMapping[item.StopId]" />
-    }
-    else if (!string.IsNullOrEmpty(item.ImgSrcProgress))
-    {
-      <img class="ListIcon" style="max-width: 1.5rem;" src="@item.ImgSrcProgress" />
-    }
-  </td>
-  <td>@string.Format("{0} {1}", item.PackingUnitsCount, Resources.Resources.Package)</td>
-  <td></td>
-  <td>@string.Format("{0} {1}", item.LoadingMeter, Resources.Resources.LoadingMeter)</td>
-  <td></td>
-  <td>@string.Format("{0} {1}", item.PallettSpacesCount, Resources.Resources.StoragePlace)</td>
-</tr>
+          <td rowspan="2" align="center">
+            @if (imgMapping.ContainsKey(item.StopId))
+            {
+              foreach (var imgSrc in imgMapping[item.StopId])
+              {
+                <img class="ListIcon" style="max-width: 1.5rem;" src="@imgSrc" />
+              }
+            }
+            else if (!string.IsNullOrEmpty(item.ImgSrcProgress))
+            {
+              <img class="ListIcon" style="max-width: 1.5rem;" src="@item.ImgSrcProgress" />
+            }
+          </td>
+          <td>@string.Format("{0} {1}", item.PackingUnitsCount, Resources.Resources.Package)</td>
+          <td></td>
+          <td>@string.Format("{0} {1}", item.LoadingMeter, Resources.Resources.LoadingMeter)</td>
+          <td></td>
+          <td>@string.Format("{0} {1}", item.PallettSpacesCount, Resources.Resources.StoragePlace)</td>
+        </tr>
 
         @if (ViewBag.ShowAllButton == null || !ViewBag.ShowAllButton)
         {

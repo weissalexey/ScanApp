@@ -1,11 +1,11 @@
-﻿@using System.Data.SqlClient
+@using System.Data.SqlClient
 @using LIS.NetSped.Scanning.ScanApp.Client.Models.ScaningSSCC;
 
 @model LIS.NetSped.Scanning.ScanApp.Client.Models.ScaningSSCC.LISScanShipmentsInStopModel<LISShipmentToLoadingOrderQAdapter>
 
 @{
   int divId = 0;
-  var imgMapping = new Dictionary<long, string>();
+  var imgMapping = new Dictionary<long, List<string>>();
   var connString = System.Configuration.ConfigurationManager.ConnectionStrings["WinSpedDb"].ConnectionString;
   using (var conn = new SqlConnection(connString))
   {
@@ -13,24 +13,57 @@
     foreach (var s in Model.Shipments)
     {
       var shipmentId = s.ShipmentId;
-      var cmd = conn.CreateCommand();
-      cmd.CommandText = "SELECT InfoSymbol12 FROM XXAV_CDC_Shipment WHERE aufintnr = " + shipmentId + " AND ScanStatus != 300";
-      using (var reader = cmd.ExecuteReader())
+      var imgs = new List<string>();
+
+      // Запрос 1: InfoSymbol12
+      var cmd12 = conn.CreateCommand();
+      cmd12.CommandText = "SELECT InfoSymbol12 FROM XXAV_CDC_Shipment WHERE aufintnr = " + shipmentId + " AND ScanStatus != 300";
+      using (var reader = cmd12.ExecuteReader())
       {
         if (reader.Read())
         {
           var symbol = reader["InfoSymbol12"].ToString();
-          string img = "";
           if (symbol == "1202")
           {
-            img = "/App_Themes/Carstensen/images/GCC.png";
+            imgs.Add("/App_Themes/Carstensen/images/GCC.png");
           }
           else if (symbol == "1200")
           {
-            img = "/App_Themes/Carstensen/images/delete.png";
+            imgs.Add("/App_Themes/Carstensen/images/delete.png");
           }
-          imgMapping[s.ShipmentId.Value] = img;
         }
+      }
+
+      // Запрос 2: InfoSymbol16
+      var cmd16 = conn.CreateCommand();
+      cmd16.CommandText = "SELECT TOP 1 InfoSymbol16 FROM XXAV_CDC_Shipment WHERE aufintnr = " + shipmentId + " AND InfoSymbol16 IS NOT NULL";
+      using (var reader = cmd16.ExecuteReader())
+      {
+        if (reader.Read())
+        {
+          var symbol16 = reader["InfoSymbol16"].ToString();
+          if (symbol16 == "37")
+          {
+            imgs.Add("/App_Themes/Carstensen/images/HUBP.png");
+          }
+          else if (symbol16 == "15" || symbol16 == "17" || symbol16 == "18")
+          {
+            imgs.Add("/App_Themes/Carstensen/images/overnight.png");
+          }
+          else if (symbol16 == "36")
+          {
+            imgs.Add("/App_Themes/Carstensen/images/PRIO.png");
+          }
+          else
+          {
+            imgs.Add("/App_Themes/Carstensen/images/FIX.png");
+          }
+        }
+      }
+
+      if (imgs.Count > 0)
+      {
+        imgMapping[s.ShipmentId.Value] = imgs;
       }
     }
   }
@@ -67,7 +100,6 @@
           <!-- Row 2 -->
           <div style="grid-column: 1" class="lis-font-smaller">
             <span>@Resources.Resources.SenderShort:</span>
-            
           </div>
           <div style="grid-column: 2" class="lis-font-smaller lis-col-oneline">
             <span>@item.OriginalSenderName</span>
@@ -86,7 +118,10 @@
           <div style="grid-column: 3; grid-row: span 2; margin-top: auto;" class="text-center">
             @if (imgMapping.ContainsKey(item.ShipmentId.Value))
             {
-              <img class="ListIcon" src="@imgMapping[item.ShipmentId.Value]" />
+              foreach (var imgSrc in imgMapping[item.ShipmentId.Value])
+              {
+                <img class="ListIcon" src="@imgSrc" />
+              }
             }
             else if (!item.ImgSrcProgress.Contains("Blank"))
             {
@@ -101,7 +136,6 @@
           <div style="grid-column: 2" class="lis-font-smaller lis-col-oneline">
             <span>@item.ResiverCity</span>
           </div>
-
 
         </div>
       </div>

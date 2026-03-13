@@ -1,0 +1,176 @@
+﻿@using LIS.NetSped.Core.IEntities.Scanning.Transshipment.LoadingOrder
+@using LIS.NetSped.Scanning.ScanApp.Client.Utils;
+@model LIS.NetSped.Scanning.ScanApp.Client.Models.ScaningSSCCSharedActions.SSCCStatusModel
+
+@{
+  string actionName = String.Empty;
+
+  Model.MobileView = true;
+
+  if (Model.LoadingOrderId <= 0 || Model.LoadingOrderInfoAdapter == null)
+  {
+    actionName = "SetStateSSCCLoop";
+  }
+  else if (Model.LoadingOrderInfoAdapter.Type == eLISLoadingOrderType.InboundApproach ||
+      Model.LoadingOrderInfoAdapter.Type == eLISLoadingOrderType.InboundMainCarriage ||
+      Model.LoadingOrderInfoAdapter.Type == eLISLoadingOrderType.InboundShuttle)
+  {
+    actionName = "SetStateScanSSCCInbound";
+  }
+  else if (Model.LoadingOrderInfoAdapter.Type == eLISLoadingOrderType.OutboundDistribution ||
+  Model.LoadingOrderInfoAdapter.Type == eLISLoadingOrderType.OutboundMainCarriage ||
+  Model.LoadingOrderInfoAdapter.Type == eLISLoadingOrderType.OutboundShuttle)
+  {
+    actionName = "SetStateScanningSSCC";
+  }
+}
+
+<script type="text/javascript">
+  var UploadedFotoCount = 0;
+
+  $(document).ready(function () {
+    $('.radio input:radio').bind('change', ToggleStateButton);
+    ToggleStateButton();
+  });
+
+
+  function IndicateUpload() {
+    $('#uploadIndicator').removeClass("glyphicon glyphicon-camera");
+    $('#uploadIndicator').addClass("glyphicon glyphicon-upload");
+
+    UploadImages();
+  };
+
+  function UploadImages() {
+    var FileInputs = $("input[type='file']");
+    if (FileInputs.length > 0) {
+      FileInputs.each(function (index, input) {
+        var File = $(input).prop("files");
+        if (File.length > 0) {
+          var DMSUrl = '@Url.Action("UploadSession", "FileUpload")';
+          var xhr = new XMLHttpRequest();
+          var fd = new FormData();
+
+          fd.append("UploadedFiles", File[0]);
+          xhr.open("POST", DMSUrl, false);
+          xhr.send(fd);
+
+          UploadedFotoCount++;
+          ToggleStateButton();
+        }
+      });
+    }
+  }
+
+  function ToggleStateButton() {
+    var SelectedStatusText = $('.radio input:radio:checked');
+    var FotoCountSummary = $('#FotoCountSummary');
+
+    FotoCountSummary.html(UploadedFotoCount + ' / ' + SelectedStatusText.attr("FotoCount")); 
+    if (SelectedStatusText.attr("FotoCount") > 0 && SelectedStatusText.attr("FotoCount") > UploadedFotoCount) {
+      $("#btnSetState").attr("disabled", "disabled");
+      $("#btnSetState").addClass("disabled");
+    }
+    else {
+      $("#btnSetState").removeAttr("disabled");
+      $("#btnSetState").removeClass("disabled");
+    }
+  }
+
+  function SetState() {
+    var StatusTextId = $('.radio input:radio:checked').val();
+    if (StatusTextId) {
+      $("#StatusTextId").val(StatusTextId);
+      $("#SetStateForm").submit();
+    }
+  }
+
+</script>
+
+@Html.ValidationSummary(false, String.Empty, new { @class = "failureNotification" })
+
+@using (Html.BeginForm(actionName, "ScaningSSCCSharedActions", FormMethod.Post, new { Id = "SetStateForm" }))
+{
+  @Html.HiddenFor(m => m.SSCC)
+  @Html.HiddenFor(m => m.Place)
+  @Html.HiddenFor(m => m.LoadingOrderId)
+  @Html.HiddenFor(m => m.StopId)
+  @Html.HiddenFor(m => m.StatusTextId)
+  @Html.HiddenFor(m => m.MobileView)
+
+
+  <div class="well">
+    <div class="panel panel-primary">
+      <div class="panel-heading">
+        <h3 class="panel-title">
+          @Model.SSCC - @Model.ActualSSCCStateText
+        </h3>
+      </div>
+      <div class="panel-body">
+
+        @Html.LISHtmlTemplate("SetStateListTemplate.mobile", Model.SSCCStates)
+
+      </div>
+    </div>
+  </div>
+
+
+
+
+}
+
+
+
+<script>
+(function () {
+    // STRICT whitelist – ONLY these codes open the camera
+    var PHOTO_CODES = {
+        "I01": 1, "I02": 1, "I03": 1,
+        "I04": 1, "I06": 1, "I96": 1, "K01": 1
+    };
+
+    function getSSCC() {
+        var input = document.querySelector("input[type='text']");
+        return input && input.value ? input.value.trim() : "";
+    }
+
+    function findStatusCodeFromElement(el) {
+        while (el && el !== document.body) {
+            if (el.innerText) {
+                var m = el.innerText.match(/\(([A-Z]\d{2})\)/);
+                if (m) return m[1];
+            }
+            el = el.parentElement;
+        }
+        return null;
+    }
+
+    function openParcelCam(sscc, code) {
+        if (!sscc || !code) return;
+        if (!PHOTO_CODES[code]) return;
+
+        var url =
+            "parcelcam://capture?baseName=" +
+            encodeURIComponent(sscc + "_" + code);
+
+        var a = document.createElement("a");
+        a.href = url;
+        a.style.display = "none";
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+    }
+
+    document.addEventListener("click", function (e) {
+        var code = findStatusCodeFromElement(e.target);
+        if (!code) return;
+
+        var sscc = getSSCC();
+        if (!sscc) return;
+
+        setTimeout(function () {
+            openParcelCam(sscc, code);
+        }, 50);
+    }, true);
+})();
+</script>
