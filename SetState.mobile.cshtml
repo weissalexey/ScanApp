@@ -31,15 +31,6 @@
   $(document).ready(function () {
     $('.radio input:radio').bind('change', ToggleStateButton);
     ToggleStateButton();
-
-    // Inject DD state option — same workflow as I01, code DD only
-    (function() {
-        var body = $('.panel-body');
-        if (!body.length) return;
-        var ddId = 'dd-state-radio';
-        var ddHtml = '<div class="radio"><label><input type="radio" name="StatusTextId" value="DD" id="' + ddId + '" FotoCount="1" onchange="ToggleStateButton()" />(DD) DK Foto Abena DD</label></div>';
-        body.append(ddHtml);
-    })();
   });
 
 
@@ -118,6 +109,8 @@
       <div class="panel-body">
 
         @Html.LISHtmlTemplate("SetStateListTemplate.mobile", Model.SSCCStates)
+
+        <div class="radio"><label><input type="radio" name="StatusText" value="DD" FotoCount="1" onchange="ToggleStateButton()" />(DD) DK Foto Abena DD</label></div>
 
       </div>
     </div>
