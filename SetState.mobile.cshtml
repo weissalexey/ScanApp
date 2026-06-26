@@ -31,6 +31,15 @@
   $(document).ready(function () {
     $('.radio input:radio').bind('change', ToggleStateButton);
     ToggleStateButton();
+
+    // Inject DD state option — same workflow as I01, code DD only
+    (function() {
+        var body = $('.panel-body');
+        if (!body.length) return;
+        var ddId = 'dd-state-radio';
+        var ddHtml = '<div class="radio"><label><input type="radio" name="StatusTextId" value="DD" id="' + ddId + '" FotoCount="1" onchange="ToggleStateButton()" />(DD) DK Foto Abena DD</label></div>';
+        body.append(ddHtml);
+    })();
   });
 
 
@@ -126,7 +135,7 @@
     // STRICT whitelist – ONLY these codes open the camera
     var PHOTO_CODES = {
         "I01": 1, "I02": 1, "I03": 1,
-        "I04": 1, "I06": 1, "I96": 1, "K01": 1
+        "I04": 1, "I06": 1, "I96": 1, "K01": 1, "DD": 1
     };
 
     function getSSCC() {
@@ -137,7 +146,7 @@
     function findStatusCodeFromElement(el) {
         while (el && el !== document.body) {
             if (el.innerText) {
-                var m = el.innerText.match(/\(([A-Z]\d{2})\)/);
+                var m = el.innerText.match(/\(([A-Z]\d{2}|DD)\)/);
                 if (m) return m[1];
             }
             el = el.parentElement;

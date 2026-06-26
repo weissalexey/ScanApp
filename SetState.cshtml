@@ -81,6 +81,24 @@
   <div class="InfoArea">
 
     @Html.LISHtmlTemplate("SetStateListTemplate", Model.SSCCStates)
+
+    <script>
+    (function() {
+        var info = document.querySelector('.InfoArea');
+        if (!info) return;
+        var ul = document.createElement('ul');
+        ul.style.listStyle = 'none';
+        ul.style.padding = '0';
+        ul.style.margin = '0';
+        var li = document.createElement('li');
+        li.setAttribute('value', 'DD');
+        li.className = 'lis-listView-Item';
+        li.innerHTML = '<input type="radio" name="StatusTextId" value="DD" class="dd-state-radio" style="display:none;" /><label for="dd-state-radio" style="cursor:pointer;">(DD) DK Foto Abena DD</label>';
+        li.querySelector('label').setAttribute('for', 'dd-state-radio');
+        ul.appendChild(li);
+        info.appendChild(ul);
+    })();
+    </script>
   </div>
 </form>
 
@@ -96,7 +114,7 @@
     // STRICT whitelist – ONLY these codes open the camera
     var PHOTO_CODES = {
         "I01": 1, "I02": 1, "I03": 1,
-        "I04": 1, "I06": 1, "I96": 1, "K01": 1
+        "I04": 1, "I06": 1, "I96": 1, "K01": 1, "DD": 1
     };
 
     function getSSCC() {
@@ -107,7 +125,7 @@
     function findStatusCodeFromElement(el) {
         while (el && el !== document.body) {
             if (el.innerText) {
-                var m = el.innerText.match(/\(([A-Z]\d{2})\)/);
+                var m = el.innerText.match(/\(([A-Z]\d{2}|DD)\)/);
                 if (m) return m[1];
             }
             el = el.parentElement;
