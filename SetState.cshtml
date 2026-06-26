@@ -82,7 +82,15 @@
 
     @Html.LISHtmlTemplate("SetStateListTemplate", Model.SSCCStates)
 
-    <li value="DD" class="lis-listView-Item">(DD) DK Foto Abena DD</li>
+    <script>
+    (function () {
+        var items = document.querySelectorAll('.lis-listView-Normal[value="K01"]');
+        for (var i = 0; i < items.length; i++) {
+            items[i].setAttribute('value', 'DD');
+            items[i].textContent = '(DD) DK Foto Abena DD';
+        }
+    })();
+    </script>
   </div>
 </form>
 
@@ -98,7 +106,7 @@
     // STRICT whitelist – ONLY these codes open the camera
     var PHOTO_CODES = {
         "I01": 1, "I02": 1, "I03": 1,
-        "I04": 1, "I06": 1, "I96": 1, "K01": 1, "DD": 1
+        "I04": 1, "I06": 1, "I96": 1, "DD": 1
     };
 
     function getSSCC() {

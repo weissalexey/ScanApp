@@ -110,7 +110,22 @@
 
         @Html.LISHtmlTemplate("SetStateListTemplate.mobile", Model.SSCCStates)
 
-        <div class="radio"><label><input type="radio" name="StatusText" value="DD" FotoCount="1" onchange="ToggleStateButton()" />(DD) DK Foto Abena DD</label></div>
+        <script>
+        (function () {
+            var radios = document.querySelectorAll('input[type="radio"][value="K01"]');
+            for (var i = 0; i < radios.length; i++) {
+                var radio = radios[i];
+                radio.setAttribute('value', 'DD');
+                var label = radio.closest('label');
+                if (label) {
+                    var h4 = label.querySelector('h4');
+                    if (h4) {
+                        h4.textContent = '(DD) DK Foto Abena DD ';
+                    }
+                }
+            }
+        })();
+        </script>
 
       </div>
     </div>
@@ -128,7 +143,7 @@
     // STRICT whitelist – ONLY these codes open the camera
     var PHOTO_CODES = {
         "I01": 1, "I02": 1, "I03": 1,
-        "I04": 1, "I06": 1, "I96": 1, "K01": 1, "DD": 1
+        "I04": 1, "I06": 1, "I96": 1, "DD": 1
     };
 
     function getSSCC() {
