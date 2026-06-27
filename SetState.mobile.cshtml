@@ -78,7 +78,9 @@
   }
 
   function SetState() {
-    var StatusTextId = $('.radio input:radio:checked').val();
+    var radio = $('.radio input:radio:checked');
+    // restore original StatusTextId (8000) so backend receives 8000, not DD
+    var StatusTextId = radio.attr('data-original-value') || radio.val();
     if (StatusTextId) {
       $("#StatusTextId").val(StatusTextId);
       $("#SetStateForm").submit();
@@ -112,16 +114,24 @@
 
         <script>
         (function () {
-            var radios = document.querySelectorAll('input[type="radio"][value="K01"]');
-            for (var i = 0; i < radios.length; i++) {
-                var radio = radios[i];
-                radio.setAttribute('value', 'DD');
-                var label = radio.closest('label');
-                if (label) {
-                    var h4 = label.querySelector('h4');
-                    if (h4) {
-                        h4.textContent = '(DD) DK Foto Abena DD ';
+            /*
+             * Reuse existing StatusTextId 8000 (backend-compiled, cannot change).
+             * - UI displays "(DD) DK Foto Abena DD" instead of the original German text.
+             * - Camera is triggered with code DD → photo saved as {SSCC}_DD.jpg.
+             * - Original StatusTextId 8000 is preserved in data-original-value
+             *   and restored at form submission so the backend receives 8000, not DD.
+             */
+            var labels = document.querySelectorAll('label');
+            for (var i = 0; i < labels.length; i++) {
+                if (labels[i].textContent.indexOf('Status für den internen Hallencheck Carstensen.') >= 0) {
+                    var radio = labels[i].querySelector('input[type="radio"]');
+                    if (radio) {
+                        // save original StatusTextId (8000) before overwriting value to DD
+                        radio.setAttribute('data-original-value', radio.getAttribute('value'));
+                        radio.setAttribute('value', 'DD');
                     }
+                    var h4 = labels[i].querySelector('h4');
+                    if (h4) h4.textContent = '(DD) DK Foto Abena DD';
                 }
             }
         })();
@@ -137,7 +147,6 @@
 }
 
 
-
 <script>
 (function () {
     // STRICT whitelist – ONLY these codes open the camera
@@ -147,7 +156,8 @@
     };
 
     function getSSCC() {
-        var input = document.querySelector("input[type='text']");
+        // use name selector to match both desktop (type=text) and mobile (type=hidden)
+        var input = document.querySelector("input[name='SSCC']");
         return input && input.value ? input.value.trim() : "";
     }
 

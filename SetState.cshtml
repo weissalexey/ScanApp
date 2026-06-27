@@ -29,7 +29,9 @@
     if (selected.length == 1) {
       var txtStatusTextId = document.getElementById('StatusTextId');
       if (txtStatusTextId) {
-        txtStatusTextId.value = selected.attr('value');
+        // restore original StatusTextId (8000) so backend receives 8000, not DD
+        var orig = selected.attr('data-original-value');
+        txtStatusTextId.value = orig ? orig : selected.attr('value');
         $("#formSetState").submit();
       }
     }
@@ -84,10 +86,21 @@
 
     <script>
     (function () {
-        var items = document.querySelectorAll('.lis-listView-Normal[value="K01"]');
+        /*
+         * Reuse existing StatusTextId 8000 (backend-compiled, cannot change).
+         * - UI displays "(DD) DK Foto Abena DD" instead of the original German text.
+         * - Camera is triggered with code DD → photo saved as {SSCC}_DD.jpg.
+         * - Original StatusTextId 8000 is preserved in data-original-value
+         *   and restored at form submission so the backend receives 8000, not DD.
+         */
+        var items = document.querySelectorAll('.lis-listView-Normal');
         for (var i = 0; i < items.length; i++) {
-            items[i].setAttribute('value', 'DD');
-            items[i].textContent = '(DD) DK Foto Abena DD';
+            if (items[i].textContent.indexOf('Status für den internen Hallencheck Carstensen.') >= 0) {
+                // save original StatusTextId (8000) before overwriting value to DD
+                items[i].setAttribute('data-original-value', items[i].getAttribute('value'));
+                items[i].setAttribute('value', 'DD');
+                items[i].textContent = '(DD) DK Foto Abena DD';
+            }
         }
     })();
     </script>
